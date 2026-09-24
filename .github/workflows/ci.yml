@@ -1,4 +1,4 @@
-name: CI
+name: CI/CD
 
 on:
   push:
@@ -68,3 +68,38 @@ jobs:
           POSTGRES_PORT: 5432
         run: |
           python manage.py test
+
+
+  docker:
+
+    needs:
+      - test
+
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build image
+        run: |
+          docker build \
+            -t ghcr.io/${{ github.repository_owner }}/django-docker-ci:latest \
+            .
+
+      - name: Push image
+        run: |
+          docker push \
+            ghcr.io/${{ github.repository_owner }}/django-docker-ci:latest
